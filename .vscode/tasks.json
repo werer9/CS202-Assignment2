@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "make test",
+            "command": "/usr/bin/make",
+            "args": [
+                "test"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "g++ build active file",
+            "command": "/usr/bin/make",
+            "args": [
+                "all"
+            ]
+        }
+    ]
+}
