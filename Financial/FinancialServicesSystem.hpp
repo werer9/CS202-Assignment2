@@ -19,10 +19,16 @@ private:
 	std::vector<Transaction*> transactions;
 
 	// private methods
+
+	// find index of customer in customers vector 
 	int getCustomerIndex(int ID) const;
+	// find index of account in accounts vector
 	int getAccountIndex(int ID) const;
+	// find index tranaction in transactions vector
 	int getTransactionIndex(int ID) const;
+	// return accounts that belong to customer
 	std::vector<Account*> getCustomerAccounts(int ID) const;
+	// get transactions of specified state
 	std::vector<Transaction*> getTransactionByState(TransactionState state) const;
 
 public:
