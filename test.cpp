@@ -78,6 +78,17 @@ TestResult testMoney() {
 	ASSERT(money3.getDollars() == -2);
 	ASSERT(money3.getCents() == -2);
 
+	Money money4(-2,300);
+	ASSERT(money4.asCents() == 100);
+	ASSERT(money4.getDollars() == 1);
+	ASSERT(money4.getCents() == 0);
+
+	// If overall postive money still add money
+	money.add(money4);
+	ASSERT(money.asCents() == -100);
+	ASSERT(money.getDollars() == -1);
+	ASSERT(money.getCents() == 0);
+
 	return TR_PASS;
 }
 
@@ -178,6 +189,68 @@ TestResult testSubtractMoneyObject() {
 	ASSERT(money.asCents() == 460);
 	ASSERT(money.getDollars() == 4);
 	ASSERT(money.getCents() == 60);
+
+	return TR_PASS;
+}
+
+/*
+ * test all money features
+ */
+TestResult testMoneyObjectAll() {
+	Money t1 = Money(-1,-1);
+	Money t2 = Money(1,120);
+
+	// Test subtract money object features
+	t1.subtract(t2);
+	ASSERT(t1.asCents() == -321);
+	ASSERT(t1.getDollars() == -3);
+	ASSERT(t1.getCents() == -21);
+
+	t2.subtract(t1);
+	ASSERT(t2.asCents() == 220);
+	ASSERT(t2.getDollars() == 2);
+	ASSERT(t2.getCents() == 20);
+
+	// Test add money object features
+	t2.add(t1);
+	ASSERT(t2.asCents() == 220);
+	ASSERT(t2.getDollars() == 2);
+	ASSERT(t2.getCents() == 20);
+
+	t1.add(t2);
+	ASSERT(t1.asCents() == -101);
+	ASSERT(t1.getDollars() == -1);
+	ASSERT(t1.getCents() == -1);
+
+	// Test add dollars/cents.
+	t1.addDollars(-1);
+	t1.addCents(-1);
+
+	ASSERT(t1.asCents() == -101);
+	ASSERT(t1.getDollars() == -1);
+	ASSERT(t1.getCents() == -1);
+
+	t1.addDollars(1);
+	t1.addCents(1);
+
+	ASSERT(t1.asCents() == 0);
+	ASSERT(t1.getDollars() == 0);
+	ASSERT(t1.getCents() == 0);
+
+	// Test the subtract dollars/cents features
+	t1.subtractDollars(-1);
+	t1.subtractCents(-1);
+
+	ASSERT(t1.asCents() == 0);
+	ASSERT(t1.getDollars() == 0);
+	ASSERT(t1.getCents() == 0);
+
+	t1.subtractDollars(1);
+	t1.subtractCents(1);
+
+	ASSERT(t1.asCents() == -101);
+	ASSERT(t1.getDollars() == -1);
+	ASSERT(t1.getCents() == -1);
 
 	return TR_PASS;
 }
@@ -364,7 +437,153 @@ TestResult testFailedSavingsAccountWithdraw() {
 
 	return TR_PASS;
 }
+/*
+ * Check that you cannot withdraw or deposit invalid money
+ */
+TestResult testSavingsAccountOne() {
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
 
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+	ASSERT(bobSavings->getBalance().asCents()==0);
+
+	ASSERT(bobSavings->depositMoney(Money(5,0)) == true);
+
+	ASSERT(bobSavings->getBalance().asCents()==500);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+
+	// Check cant withdraw/deposit Invalid money
+	ASSERT(bobSavings->depositMoney(Money(-3,0)) == false);
+	ASSERT(bobSavings->getBalance().asCents()==500);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+	ASSERT(bobSavings->withdrawMoney(Money(-3,0)) == false);
+	ASSERT(bobSavings->getBalance().asCents()==500);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
+/*
+ * Test that the bonus value is working correctly
+ */
+TestResult testSavingsAccountTwo(){
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
+
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+	ASSERT(bobSavings->getBalance().asCents()==0);
+
+	ASSERT(bobSavings->depositMoney(Money(3,200)) == true);
+
+	ASSERT(bobSavings->getBalance().asCents()==500);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+
+
+	ASSERT(bobSavings->depositMoney(Money(0,20)) == true);
+	ASSERT(bobSavings->getBalance().asCents()==1520);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+
+	ASSERT(bobSavings->depositMoney(Money(2,20)) == true);
+	ASSERT(bobSavings->getBalance().asCents()==1740);
+	ASSERT(bobSavings->getBonusValue().asCents()==1000);
+
+	ASSERT(bobSavings->withdrawMoney(Money(0,0)) == true);
+	ASSERT(bobSavings->getBalance().asCents()==1740);
+	ASSERT(bobSavings->getBonusValue().asCents()==800);
+
+	ASSERT(bobSavings->depositMoney(Money(0,20)) == true);
+	ASSERT(bobSavings->getBalance().asCents()==2560);
+	ASSERT(bobSavings->getBonusValue().asCents()==800);
+
+	ASSERT(bobSavings->depositMoney(Money(2,20)) == true);
+	ASSERT(bobSavings->getBalance().asCents()==2780);
+	ASSERT(bobSavings->getBonusValue().asCents()==800);
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
+/*
+ * test that the bonus value never goes negative
+ */
+TestResult testSavingsAccountThree(){
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+
+	int expectedValue = 800; // the starting bonus value in this case.
+
+	for(int i = 0; i < 7; i++){
+		ASSERT(bobSavings->withdrawMoney(Money(0,0)) == true);
+		ASSERT(bobSavings->getBonusValue().asCents() == expectedValue);
+		if(expectedValue - 200 >= 0){
+			expectedValue -= 200;
+		}
+	}
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
+
+TestResult testSavingsAccountFour(){
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+
+	ASSERT(bobSavings->withdrawMoney(Money(0,0)) == true);
+	ASSERT(bobSavings->depositMoney(Money(0,0)) == true);
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
+
+TestResult testSavingsAccountFive(){
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+
+	bobSavings->depositMoney(Money(2,320));
+	ASSERT(bobSavings->getBalance().asCents() == 520);
+
+	bobSavings->withdrawMoney(Money(2,400));
+	ASSERT(bobSavings->getBalance().asCents() == 520);
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
+/*
+ * test that the bonus remains constant when
+ * a transaction is failed (multiple iterations).
+ */
+TestResult testSavingsAccountSix(){
+	Customer* bob = new Customer("bob");
+	ASSERT(bob->getName() == "bob");
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+
+	int expectedValue = 1000; // the starting bonus value
+	for(int i = 0; i < 5; i++){
+		for(int j = 0; j < 7; j++){
+			ASSERT(bobSavings->withdrawMoney(Money(1,0)) == false);
+			ASSERT(bobSavings->getBonusValue().asCents() == expectedValue);
+		}
+		expectedValue -= 200;
+		bobSavings->withdrawMoney(Money(0,0));
+	}
+
+	delete bob;
+	delete bobSavings;
+
+	return TR_PASS;
+}
 /*
  * 14. Test construction of ChequeAccount and getters
  */
@@ -506,6 +725,113 @@ TestResult testFailedChequeAccountWithdrawEdge() {
 
 	return TR_PASS;
 }
+/*
+ * Test that 3001 withdrawal will go through but
+ * a 3000 wont
+ */
+TestResult testChequeAccountOne(){
+	Customer* james = new Customer("James");
+	ASSERT(james->getName() == "James");
+
+	ChequeAccount* jamesCheque = new ChequeAccount(james->getID());
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+
+	ASSERT(jamesCheque->depositMoney(Money(3000,0)) == true);
+
+	ASSERT(jamesCheque->withdrawMoney(Money(2999,0)) == true);
+	ASSERT(jamesCheque->getBalance().asCents()== 0);
+	ASSERT(jamesCheque->getTransactionFee() != 0);
+	ASSERT(jamesCheque->getTransactionFee()->asCents() == 200);
+
+	ASSERT(jamesCheque->depositMoney(Money(3000,0)) == true);
+
+	ASSERT(jamesCheque->withdrawMoney(Money(3000,0)) == false);
+	ASSERT(jamesCheque->getBalance().asCents()== 300000);
+	ASSERT(jamesCheque->getTransactionFee() != 0);
+	ASSERT(jamesCheque->getTransactionFee()->asCents() == 200);
+
+	delete james;
+	delete jamesCheque;
+
+	return TR_PASS;
+}
+/*
+ * Test for invalid input
+ */
+TestResult testChequeAccountTwo(){
+	Customer* james = new Customer("James");
+	ASSERT(james->getName() == "James");
+
+	ChequeAccount* jamesCheque = new ChequeAccount(james->getID());
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+
+	ASSERT(jamesCheque->depositMoney(Money(-3000,0)) == false);
+
+	ASSERT(jamesCheque->withdrawMoney(Money(2999,0)) == false);
+	ASSERT(jamesCheque->getBalance().asCents()== 0);
+	ASSERT(jamesCheque->getTransactionFee() != 0);
+	ASSERT(jamesCheque->getTransactionFee()->asCents() == 100);
+
+	ASSERT(jamesCheque->depositMoney(Money(3000,0)) == true);
+
+	ASSERT(jamesCheque->withdrawMoney(Money(-500,0)) == false);
+	ASSERT(jamesCheque->getBalance().asCents()== 300000);
+	ASSERT(jamesCheque->getTransactionFee() != 0);
+	ASSERT(jamesCheque->getTransactionFee()->asCents() == 100);
+
+	delete james;
+	delete jamesCheque;
+
+	return TR_PASS;
+}
+/*
+ * Check that transaction fee continues to increment correctly
+ */
+TestResult testChequeAccountThree(){
+	Customer* james = new Customer("James");
+	ASSERT(james->getName() == "James");
+
+	ChequeAccount* jamesCheque = new ChequeAccount(james->getID());
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+
+	int expectedValue = 200;
+	jamesCheque->depositMoney(Money(3000,0));
+
+	for(int i = 0; i < 10; i++){
+		jamesCheque->withdrawMoney(Money(0,0));
+		ASSERT(jamesCheque->getTransactionFee() != 0);
+		ASSERT(jamesCheque->getTransactionFee()->asCents() == expectedValue);
+		expectedValue += 100;
+	}
+
+	delete james;
+	delete jamesCheque;
+
+	return TR_PASS;
+}
+/*
+ * test that a balance of greater than 3000
+ * is possible.
+ */
+TestResult testChequeAccountFour(){
+	Customer* james = new Customer("James");
+	ASSERT(james->getName() == "James");
+
+	ChequeAccount* jamesCheque = new ChequeAccount(james->getID());
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+
+	ASSERT(jamesCheque->depositMoney(Money(3000,0)) == true);
+	ASSERT(jamesCheque->depositMoney(Money(123,0)) == true);
+	ASSERT(jamesCheque->getBalance().asCents()== 312300);
+	ASSERT(jamesCheque->getTransactionFee() != 0);
+	ASSERT(jamesCheque->getTransactionFee()->asCents() == 100);
+
+	delete james;
+	delete jamesCheque;
+
+	return TR_PASS;
+}
+
 
 /*
  * 20. Test construction of CreditAccount and getters
@@ -606,6 +932,162 @@ TestResult testSuccessfulCreditAccountWithdrawDebt() {
 
 	delete billie;
 	delete billieCredit;
+
+	return TR_PASS;
+}
+
+/*
+ * test when account balance is negative can still add money
+ */
+
+TestResult testCreditAccountOne() {
+	Customer* billie = new Customer("Billie");
+
+	CreditAccount* billieCredit= new CreditAccount(billie->getID());
+	ASSERT(billieCredit->getBalance().asCents()==0);
+
+	ASSERT(billieCredit->depositMoney(Money(500,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents()==50000);
+
+	ASSERT(billieCredit->withdrawMoney(Money(800,77)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == -30077);
+
+	ASSERT(billieCredit->depositMoney(Money(500,20)) == true);
+	ASSERT(billieCredit->getBalance().asCents()== 19943);
+
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+
+/*
+ * test invalid inputs
+ */
+
+TestResult testCreditAccountTwo() {
+	Customer* billie = new Customer("Billie");
+
+	CreditAccount* billieCredit= new CreditAccount(billie->getID());
+	ASSERT(billieCredit->getBalance().asCents()==0);
+
+	//invalid deposit
+	ASSERT(billieCredit->depositMoney(Money(-500,0)) == false);
+	ASSERT(billieCredit->getBalance().asCents()==0);
+
+	ASSERT(billieCredit->depositMoney(Money(500,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents()==50000);
+
+
+	ASSERT(billieCredit->withdrawMoney(Money(-800,0)) == false);
+	ASSERT(billieCredit->getBalance().asCents() == 50000);
+
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+/*
+ * check extreme cases of deposit (5k)
+ * also check if withdraw, and depositing $0 results in successful deposit
+ */
+TestResult testCreditAccountThree() {
+	Customer* billie = new Customer("Billie");
+
+	CreditAccount* billieCredit= new CreditAccount(billie->getID());
+	ASSERT(billieCredit->getBalance().asCents()==0);
+
+	//invalid deposit
+	ASSERT(billieCredit->depositMoney(Money(5000,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents()==500000);
+
+	ASSERT(billieCredit->depositMoney(Money(1,0)) == false);
+	ASSERT(billieCredit->getBalance().asCents()==500000);
+
+
+	ASSERT(billieCredit->withdrawMoney(Money(5000,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+
+	ASSERT(billieCredit->depositMoney(Money(0,0)) == true);
+	ASSERT(billieCredit->withdrawMoney(Money(0,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+/*
+ * test that when withdrawing from a negative
+ * credit still goes through.
+ */
+TestResult testCreditAccountFour() {
+	Customer* billie = new Customer("Billie");
+
+	CreditAccount* billieCredit= new CreditAccount(billie->getID());
+	ASSERT(billieCredit->getBalance().asCents()==0);
+
+	ASSERT(billieCredit->withdrawMoney(Money(100,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == -10000);
+
+	ASSERT(billieCredit->withdrawMoney(Money(100,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == -20000);
+
+	ASSERT(billieCredit->depositMoney(Money(100,0)) == true);
+	ASSERT(billieCredit->getBalance().asCents() == -10000);
+
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+TestResult testAccount(){
+	Customer* bob = new Customer("Bob");
+	ASSERT(bob->getName() == "Bob");
+
+	SavingsAccount* bobSavings = new SavingsAccount(bob->getID());
+	ASSERT(bobSavings->getBalance().asCents() == 0);
+	ASSERT(bobSavings->getCustomerID() == bob->getID());
+	ASSERT(bobSavings->getBonusValue().asCents() == 1000);
+
+	bobSavings->depositMoney(Money(1,20));
+	ASSERT(bobSavings->getBalance().asCents() == 120);
+	ASSERT(bobSavings->getBonusValue().asCents() == 1000);
+
+	bobSavings->depositMoney(Money(1,20));
+	ASSERT(bobSavings->getBalance().asCents() == 1240);
+	ASSERT(bobSavings->getBonusValue().asCents() == 1000);
+	//Check that the savings cannot be altered outside of the class stack frame
+	bobSavings->getBalance().addDollars(2);
+	bobSavings->getBalance().addCents(1253);
+	ASSERT(bobSavings->getBalance().asCents() == 1240);
+	ASSERT(bobSavings->getBonusValue().asCents() == 1000);
+
+	Customer* finn = new Customer("Finn");
+	ASSERT(finn->getName() == "Finn");
+
+	SavingsAccount* finnSavings = new SavingsAccount(finn->getID());
+	ASSERT(finnSavings->getBalance().asCents() == 0);
+	ASSERT(finnSavings->getCustomerID() == finn->getID());
+	ASSERT(finnSavings->getCustomerID() != bob->getID()); // Check different id's
+	ASSERT(finnSavings->getBonusValue().asCents() == 1000);
+
+	finnSavings->withdrawMoney(Money(10,523));
+	ASSERT(finnSavings->getBalance().asCents() == 0);
+	ASSERT(finnSavings->getBonusValue().asCents() == 1000);
+
+	finnSavings->depositMoney(Money(10,53));
+	ASSERT(finnSavings->getBalance().asCents() == 1053);
+	ASSERT(finnSavings->getBonusValue().asCents() == 1000);
+
+	finnSavings->withdrawMoney(Money(8,0));
+	ASSERT(finnSavings->getBalance().asCents() == 253);
+	ASSERT(finnSavings->getBonusValue().asCents() == 800);
+
+	delete bob;
+	delete finn;
+	delete bobSavings;
+	delete finnSavings;
 
 	return TR_PASS;
 }
@@ -841,6 +1323,301 @@ TestResult testFailedTransactionTwo() {
 
 	return TR_PASS;
 }
+
+/*
+ * check that the first transaction ID is 1 and
+ * id increments correctly.
+ */
+TestResult testTransactionOne() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+
+	Account* billieCredit= new CreditAccount(billie->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+
+	billieCredit->depositMoney(Money(500,0));
+	jamesCheque->depositMoney(Money(300,0));
+
+	Transaction* transaction = new Transaction(billieCredit, jamesCheque, Money(100,0));
+	Transaction* transaction2 = new Transaction(billieCredit, jamesCheque, Money(100,0));
+	Transaction* transaction3 = new Transaction(billieCredit, jamesCheque, Money(100,0));
+
+	ASSERT(transaction->getID() == 1);
+	ASSERT(transaction->getID() == 2);
+	ASSERT(transaction->getID() == 3);
+
+	delete james;
+	delete jamesCheque;
+	delete billie;
+	delete billieCredit;
+	delete transaction;
+	delete transaction2;
+	delete transaction3;
+
+	return TR_PASS;
+}
+
+
+/*
+ * Test that when cheque account fee introduced failed transaction
+ */
+TestResult testTransactionTwo() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+
+	Account* billieCredit= new CreditAccount(billie->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+
+	billieCredit->depositMoney(Money(500,0));
+	jamesCheque->depositMoney(Money(500,0)); // total amount needed to withdraw is 501
+
+	Transaction* transaction = new Transaction(jamesCheque, billieCredit, Money(500,0));
+
+	ASSERT(transaction->performTransaction() == false);
+	ASSERT(transaction->getState() == FAILED);
+
+
+	delete james;
+	delete jamesCheque;
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+/*
+ * Test that when introducing a cheque account, only up
+ * to $3000 can be deposited. Also tests the features of the
+ * Savings account.
+ */
+TestResult testTransactionThree() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+
+	Account* billieSavings= new SavingsAccount(billie->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+
+	billieSavings->depositMoney(Money(5000,0));
+	jamesCheque->depositMoney(Money(500,0));
+
+	Transaction* transaction = new Transaction(billieSavings, jamesCheque, Money(3000,0));
+
+	ASSERT(transaction->performTransaction() == true);
+	ASSERT(transaction->getState() == COMPLETED);
+	ASSERT(billieSavings->getBalance().asCents() == 200000);
+	ASSERT(jamesCheque->getBalance().asCents() == 350000);
+
+	billieSavings->depositMoney(Money(2000,0)); // Don't forget bonus value
+
+	Transaction* transaction2 = new Transaction(billieSavings, jamesCheque, Money(3001,0));
+	ASSERT(transaction2->performTransaction() == false);
+	ASSERT(transaction2->getState() == FAILED);
+	ASSERT(billieSavings->getBalance().asCents() == 400800);
+	ASSERT(jamesCheque->getBalance().asCents() == 350000);
+
+	delete james;
+	delete jamesCheque;
+	delete billie;
+	delete billieSavings;
+
+	return TR_PASS;
+}
+/*
+ * test that multiple withdrawals result in an increased
+ * transaction fee within the cheque account
+ */
+TestResult testTransactionFour() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+
+	Account* billieCredit= new CreditAccount(billie->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+
+	billieCredit->depositMoney(Money(500,0));
+	jamesCheque->depositMoney(Money(500,0));
+
+	Transaction* transaction = new Transaction(jamesCheque, billieCredit, Money(100,0));
+
+	ASSERT(transaction->performTransaction() == true);
+	ASSERT(transaction->getState() == COMPLETED);
+	ASSERT(jamesCheque->getBalance().asCents() == 39900);
+	ASSERT(billieCredit->getBalance().asCents() == 60000);
+
+	Transaction* transaction2 = new Transaction(jamesCheque, billieCredit, Money(100,0));
+
+	ASSERT(transaction2->performTransaction() == true);
+	ASSERT(transaction2->getState() == COMPLETED);
+	ASSERT(jamesCheque->getBalance().asCents() == 29700);
+	ASSERT(billieCredit->getBalance().asCents() == 70000);
+
+	delete james;
+	delete jamesCheque;
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+/*
+ * Test that the features of the credit account
+ * work with transfers.
+ */
+TestResult testTransactionFive() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+
+	Account* billieCredit= new CreditAccount(billie->getID());
+	Account* jamesSavings = new SavingsAccount(james->getID());
+
+	billieCredit->depositMoney(Money(500,0));
+	jamesSavings->depositMoney(Money(10000,0));
+
+	Transaction* transaction = new Transaction(jamesSavings, billieCredit, Money(4500,0));
+
+
+	ASSERT(transaction->performTransaction() == true);
+	ASSERT(transaction->getState() == COMPLETED);
+	ASSERT(jamesSavings->getBalance().asCents() == 550000);
+	ASSERT(billieCredit->getBalance().asCents() == 500000);
+
+	Transaction* transaction2 = new Transaction(jamesSavings, billieCredit, Money(1,0));
+	ASSERT(transaction2->performTransaction() == false);
+	ASSERT(transaction2->getState() == FAILED);
+	ASSERT(jamesSavings->getBalance().asCents() == 550000);
+	ASSERT(billieCredit->getBalance().asCents() == 500000);
+
+	Transaction* transaction3 = new Transaction(billieCredit, jamesSavings, Money(10000,0));
+	ASSERT(transaction3->performTransaction() == true);
+	ASSERT(transaction3->getState() == COMPLETED);
+	ASSERT(jamesSavings->getBalance().asCents() == 1550800);
+	ASSERT(billieCredit->getBalance().asCents() == -500000);
+
+	delete james;
+	delete jamesSavings;
+	delete billie;
+	delete billieCredit;
+
+	return TR_PASS;
+}
+/*
+ * Test that extreme inputs result in correct outcomes
+ * for example an input of negative money or a transfer of 0 dollars
+ */
+TestResult testTransactionSix() {
+
+	Customer* billie = new Customer("Billie");
+	Customer* james = new Customer("James");
+	Customer* pepeHands = new Customer("pepeHands");
+
+	Account* billieCredit= new CreditAccount(billie->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+	Account* pepeHandsSavings = new SavingsAccount(pepeHands->getID());
+
+	//All Account are made with $0.00
+
+
+	// This block tests that an input of 0 should return a successful transaction
+	Transaction* transaction = new Transaction(billieCredit, jamesCheque, Money(0,0));
+	ASSERT(transaction->performTransaction() == true);
+	ASSERT(transaction->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// Remember the Cheque account has a withdraw fee
+	Transaction* transaction2 = new Transaction(jamesCheque, billieCredit, Money(0,0));
+	ASSERT(transaction2->performTransaction() == false);
+	ASSERT(transaction2->getState() == FAILED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// test that 0 works with savings->credit
+	Transaction* transaction3 = new Transaction(pepeHandsSavings, billieCredit, Money(0,0));
+	ASSERT(transaction3->performTransaction() == true);
+	ASSERT(transaction3->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// Opposite of above should be true
+	Transaction* transaction4 = new Transaction(billieCredit, pepeHandsSavings, Money(0,0));
+	ASSERT(transaction4->performTransaction() == true);
+	ASSERT(transaction4->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// Test savings->cheque works
+	Transaction* transaction5 = new Transaction(pepeHandsSavings, jamesCheque, Money(0,0));
+	ASSERT(transaction5->performTransaction() == true);
+	ASSERT(transaction5->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// Test cheque -> savings doesn't work (withdraw fee)
+	Transaction* transaction6 = new Transaction(jamesCheque, pepeHandsSavings, Money(0,0));
+	ASSERT(transaction6->performTransaction() == false);
+	ASSERT(transaction6->getState() == FAILED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	// Test that when a negative is inputed sets money to 0.
+	// Which can result in both a successful, and not successful result
+	// as tested below.
+	Transaction* transaction7 = new Transaction(pepeHandsSavings, billieCredit, Money(-1,-1));
+	ASSERT(transaction7->performTransaction() == true);
+	ASSERT(transaction7->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	Transaction* transaction8 = new Transaction(pepeHandsSavings, billieCredit, Money(0,-1));
+	ASSERT(transaction8->performTransaction() == true);
+	ASSERT(transaction8->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	Transaction* transaction9 = new Transaction(pepeHandsSavings, billieCredit, Money(-1,0));
+	ASSERT(transaction9->performTransaction() == true);
+	ASSERT(transaction9->getState() == COMPLETED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	Transaction* transaction10 = new Transaction(jamesCheque, billieCredit, Money(-1,0));
+	ASSERT(transaction10->performTransaction() == false);
+	ASSERT(transaction10->getState() == FAILED);
+	ASSERT(billieCredit->getBalance().asCents() == 0);
+	ASSERT(jamesCheque->getBalance().asCents() == 0);
+	ASSERT(pepeHandsSavings->getBalance().asCents() == 0);
+
+	delete pepeHands;
+	delete pepeHandsSavings;
+	delete james;
+	delete jamesCheque;
+	delete billie;
+	delete billieCredit;
+	delete transaction;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+	delete transaction6;
+	delete transaction7;
+	delete transaction8;
+	delete transaction9;
+	delete transaction10;
+
+	return TR_PASS;
+}
+
 
 #endif /*ENABLE_T3_TESTS*/
 
@@ -1427,7 +2204,548 @@ TestResult testGetTotalCustomerBalanceMultiple() {
 	delete sarah;
 	return TR_PASS;
 }
+/*
+ * test when 0 transactions are input that performPendingTransactions
+ * doesn't cause any issues, i.e segmentation fault.
+ */
+TestResult testFSSOne() {
 
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* jimbo  = new Customer("Jimbo");
+	Customer* james = new Customer("James");
+	Account* jimboCredit = new CreditAccount(jimbo->getID());
+	Account* jamesCheque = new ChequeAccount(james->getID());
+
+	ASSERT (fss->addCustomer(jimbo) == true);
+	ASSERT (fss->addCustomer(james) == true);
+	ASSERT (fss->addAccount(jimboCredit) == true);
+	ASSERT (fss->addAccount(jamesCheque) == true);
+
+	std::vector<Transaction*> transactionsCompleted = fss->performPendingTransactions();
+	ASSERT(transactionsCompleted.size() == 0);
+
+	delete fss;
+	delete jimbo;
+	delete jimboCredit;
+	delete james;
+	delete jamesCheque;
+
+	return TR_PASS;
+}
+/*
+ * Test order longer (5 transactions)
+ */
+TestResult testFSSTwo() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Account* fooCheque = new ChequeAccount(foo->getID());
+	Account* barCheque = new ChequeAccount(bar->getID());
+
+	fooCheque->depositMoney(Money(700,0));
+	barCheque->depositMoney(Money(100,0));
+	Transaction* transaction1 = new Transaction(fooCheque, barCheque, Money(600,0));
+	Transaction* transaction2 = new Transaction(barCheque, fooCheque, Money(400,0));
+	Transaction* transaction3 = new Transaction(fooCheque, barCheque, Money(200,0));
+	Transaction* transaction4 = new Transaction(barCheque, fooCheque, Money(400,0));
+	Transaction* transaction5 = new Transaction(fooCheque, barCheque, Money(694,0));
+
+
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addAccount(fooCheque) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addAccount(barCheque) == true);
+
+	//Transactions added in random order.
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+
+	//transactions should be done in the following order 1,2,3,4,5
+	std::vector<Transaction*> transactionsCompleted = fss->performPendingTransactions();
+
+	ASSERT(transactionsCompleted.size() == 5);
+	ASSERT(fooCheque->getBalance().asCents() == 0);
+	ASSERT(barCheque->getBalance().asCents() == 79100);
+
+	delete fss;
+	delete foo;
+	delete fooCheque;
+	delete bar;
+	delete barCheque;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+	return TR_PASS;
+}
+/*
+ * Test 1 for this particular case (multiple are needed)
+ * Test the cheque, credit, and savings account limitations
+ * are accounted for when calling perform pending transactions.
+ */
+TestResult testFSSThree() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	fooSavings->depositMoney(Money(10000,0));
+	barCredit->depositMoney(Money(77,77));
+	garCheque->depositMoney(Money(100,120));
+
+	// Following should fail
+	Transaction* transaction1 = new Transaction(fooSavings, barCredit, Money(4923,23));
+	Transaction* transaction2 = new Transaction(fooSavings, garCheque, Money(3001,0));
+
+	// Should lower the bonus value -2
+	Transaction* transaction3 = new Transaction(fooSavings, barCredit, Money(5,682));
+
+	// Should add bonus value to savings and deduct withdrawal fee
+	Transaction* transaction4 = new Transaction(garCheque, fooSavings, Money(0,0));
+
+	// Should fail due to withdrawal fee (can't go negative)
+	Transaction* transaction5 = new Transaction(garCheque, fooSavings, Money(100,2));
+
+
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addAccount(barCredit) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+	ASSERT(fss->addAccount(garCheque) == true);
+
+
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) == true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+
+	std::vector<Transaction*> transactionsPending = fss->getTransactions(PENDING);
+	ASSERT(transactionsPending.size() == 5);
+
+
+	std::vector<Transaction*> transactionsCompleted = fss->performPendingTransactions();
+	std::vector<Transaction*> transactionsFailed = fss->getTransactions(FAILED);
+	transactionsPending = fss->getTransactions(PENDING);
+
+	ASSERT(transactionsCompleted.size() == 2);
+	ASSERT(transactionsFailed.size() == 3);
+	ASSERT(transactionsPending.size() == 0);
+	ASSERT(fooSavings->getBalance().asCents() == 999618);
+	ASSERT(barCredit->getBalance().asCents() == 8959);
+	ASSERT(garCheque->getBalance().asCents() == 10020);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+
+	return TR_PASS;
+}
+/*
+ * Test all account types are added correctly
+ * to the system as well as customers.
+ */
+TestResult testFSSFour() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	// Nothing should be in the system yet
+	ASSERT(fss->verifyCustomer(foo->getID()) == false);
+	ASSERT(fss->verifyCustomer(bar->getID()) == false);
+	ASSERT(fss->verifyCustomer(gar->getID()) == false);
+	ASSERT(fss->verifyAccount(fooSavings->getAccountID()) == false);
+	ASSERT(fss->verifyAccount(barCredit->getAccountID()) == false);
+	ASSERT(fss->verifyAccount(garCheque->getAccountID()) == false);
+
+	// Accounts cannot be added until customer exists in system
+	ASSERT(fss->addAccount(fooSavings) == false);
+	ASSERT(fss->addAccount(barCredit) == false);
+	ASSERT(fss->addAccount(garCheque) == false);
+
+	// Add everything to the system
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addAccount(barCredit) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+	ASSERT(fss->addAccount(garCheque) == true);
+
+	// Check it was all added
+	ASSERT(fss->verifyCustomer(foo->getID()) == true);
+	ASSERT(fss->verifyCustomer(bar->getID()) == true);
+	ASSERT(fss->verifyCustomer(gar->getID()) == true);
+	ASSERT(fss->verifyAccount(fooSavings->getAccountID()) == true);
+	ASSERT(fss->verifyAccount(barCredit->getAccountID()) == true);
+	ASSERT(fss->verifyAccount(garCheque->getAccountID()) == true);
+
+	// Can't add duplicates
+	ASSERT(fss->addCustomer(foo) == false);
+	ASSERT(fss->addAccount(fooSavings) == false);
+	ASSERT(fss->addCustomer(bar) == false);
+	ASSERT(fss->addAccount(barCredit) == false);
+	ASSERT(fss->addCustomer(gar) == false);
+	ASSERT(fss->addAccount(garCheque) == false);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+
+	return TR_PASS;
+}
+/*
+ * Test transactions are added correctly
+ */
+TestResult testFSSFive() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	fooSavings->depositMoney(Money(10000,0));
+	barCredit->depositMoney(Money(77,77));
+	garCheque->depositMoney(Money(100,120));
+
+	// Following should fail
+	Transaction* transaction1 = new Transaction(fooSavings, barCredit, Money(4923,23));
+	Transaction* transaction2 = new Transaction(fooSavings, garCheque, Money(3001,0));
+
+	// Should lower the bonus value -2
+	Transaction* transaction3 = new Transaction(fooSavings, barCredit, Money(5,682));
+
+	// Should add bonus value to savings and deduct withdrawal fee
+	Transaction* transaction4 = new Transaction(garCheque, fooSavings, Money(0,0));
+
+	// Should fail due to withdrawal fee (can't go negative)
+	Transaction* transaction5 = new Transaction(garCheque, fooSavings, Money(100,2));
+
+
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addAccount(barCredit) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+	ASSERT(fss->addAccount(garCheque) == true);
+
+
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) == true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+
+	std::vector<Transaction*> transactionsPending = fss->getTransactions(PENDING);
+	ASSERT(transactionsPending.size() == 5);
+
+
+	std::vector<Transaction*> transactionsCompleted = fss->performPendingTransactions();
+	std::vector<Transaction*> transactionsFailed = fss->getTransactions(FAILED);
+	transactionsPending = fss->getTransactions(PENDING);
+
+	ASSERT(transactionsCompleted.size() == 2);
+	ASSERT(transactionsFailed.size() == 3);
+	ASSERT(transactionsPending.size() == 0);
+	ASSERT(fooSavings->getBalance().asCents() == 999618);
+	ASSERT(barCredit->getBalance().asCents() == 8959);
+	ASSERT(garCheque->getBalance().asCents() == 10020);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+
+	return TR_PASS;
+}
+
+TestResult testFSSSix() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	fooSavings->depositMoney(Money(100,0));
+	barCredit->depositMoney(Money(0,0));
+	garCheque->depositMoney(Money(100,0));
+
+
+	Transaction* transaction1 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction2 = new Transaction(fooSavings, garCheque, Money(0,0));
+	Transaction* transaction3 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction4 = new Transaction(garCheque, fooSavings, Money(0,0));
+	Transaction* transaction5 = new Transaction(garCheque, fooSavings, Money(0,0));
+
+	// Attempt to just add customers.
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+
+	// Check that when only the Credit account is added but no others fails
+	ASSERT(fss->addAccount(barCredit) == true);
+	ASSERT(fss->addTransaction(transaction1) == false);
+	ASSERT(fss->addTransaction(transaction2) == false);
+	ASSERT(fss->addTransaction(transaction3) == false);
+	ASSERT(fss->addTransaction(transaction4) == false);
+	ASSERT(fss->addTransaction(transaction5) == false);
+
+
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addAccount(garCheque) == true);
+
+	// Everything added should work now
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) ==	true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+
+	return TR_PASS;
+}
+
+TestResult testFSSSeven() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	fooSavings->depositMoney(Money(100,0));
+	barCredit->depositMoney(Money(0,0));
+	garCheque->depositMoney(Money(100,0));
+
+
+	Transaction* transaction1 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction2 = new Transaction(fooSavings, garCheque, Money(0,0));
+	Transaction* transaction3 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction4 = new Transaction(garCheque, fooSavings, Money(0,0));
+	Transaction* transaction5 = new Transaction(garCheque, fooSavings, Money(0,0));
+
+	// Attempt to just add customers.
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+
+	// Check that when only the Cheque account is added but no others fails
+	ASSERT(fss->addAccount(garCheque) == true);
+	ASSERT(fss->addTransaction(transaction1) == false);
+	ASSERT(fss->addTransaction(transaction2) == false);
+	ASSERT(fss->addTransaction(transaction3) == false);
+	ASSERT(fss->addTransaction(transaction4) == false);
+	ASSERT(fss->addTransaction(transaction5) == false);
+
+
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addAccount(barCredit) == true);
+
+	// Everything added should work now
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) ==	true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+
+	return TR_PASS;
+}
+/*
+ * Test that when 0 dollar transactions
+ * are made, they can pass through either
+ * successfuly or not.
+ */
+TestResult testFSSEight() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+
+	Customer* foo = new Customer("Foo");
+	Customer* bar = new Customer("bar");
+	Customer* gar = new Customer("gar");
+
+	Account* fooSavings = new SavingsAccount(foo->getID());
+	Account* barCredit = new CreditAccount(bar->getID());
+	Account* garCheque = new ChequeAccount(gar->getID());
+
+	fooSavings->depositMoney(Money(100,0));
+	barCredit->depositMoney(Money(0,0));
+	garCheque->depositMoney(Money(100,0));
+
+
+	Transaction* transaction1 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction2 = new Transaction(fooSavings, garCheque, Money(0,0));
+	Transaction* transaction3 = new Transaction(fooSavings, barCredit, Money(0,0));
+	Transaction* transaction4 = new Transaction(garCheque, fooSavings, Money(0,0));
+	Transaction* transaction5 = new Transaction(garCheque, fooSavings, Money(0,0));
+	Transaction* transaction6 = new Transaction(barCredit, garCheque, Money(0,0));
+
+
+	ASSERT(fss->addCustomer(foo) == true);
+	ASSERT(fss->addCustomer(bar) == true);
+	ASSERT(fss->addCustomer(gar) == true);
+	ASSERT(fss->addAccount(garCheque) == true);
+	ASSERT(fss->addAccount(fooSavings) == true);
+	ASSERT(fss->addAccount(barCredit) == true);
+
+
+	ASSERT(fss->addTransaction(transaction1) == true);
+	ASSERT(fss->addTransaction(transaction2) == true);
+	ASSERT(fss->addTransaction(transaction3) == true);
+	ASSERT(fss->addTransaction(transaction4) ==	true);
+	ASSERT(fss->addTransaction(transaction5) == true);
+	ASSERT(fss->addTransaction(transaction6) == true);
+
+	std::vector<Transaction*> transactionsCompleted = fss->performPendingTransactions();
+
+	ASSERT(transactionsCompleted.size() == 6);
+	ASSERT(fooSavings->getBalance().asCents() == 10400);
+	ASSERT(barCredit->getBalance().asCents() == 0);
+	ASSERT(garCheque->getBalance().asCents() == 9700);
+
+	delete fss;
+	delete foo;
+	delete fooSavings;
+	delete bar;
+	delete barCredit;
+	delete transaction1;
+	delete transaction2;
+	delete transaction3;
+	delete transaction4;
+	delete transaction5;
+
+
+	return TR_PASS;
+}
+/*
+ * Test that a overall balance of less than 0 can be returned
+ */
+TestResult testFSSNine() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+	Customer* sarah = new Customer("Sarah");
+	CreditAccount* sarahCredit = new CreditAccount(sarah->getID());
+	ChequeAccount* sarahCheque = new ChequeAccount(sarah->getID());
+	SavingsAccount* sarahSavings = new SavingsAccount(sarah->getID());
+
+	fss->addCustomer(sarah);
+	fss->addAccount(sarahCredit);
+	fss->addAccount(sarahCheque);
+	fss->addAccount(sarahSavings);
+
+	sarahCredit->withdrawMoney(Money(1000,0));
+	sarahCheque->depositMoney(Money(200,22));
+	sarahSavings->depositMoney(Money(689,25));
+
+	Money total = fss->getCustomerBalance(sarah->getID());
+
+	ASSERT(total.asCents() == -11053);
+
+	delete sarah;
+	return TR_PASS;
+}
+/*
+ * Test that the customer account balance can be 0 dollars total.
+ */
+TestResult testFSSTen() {
+
+	FinancialServicesSystem* fss = new FinancialServicesSystem();
+	Customer* sarah = new Customer("Sarah");
+	CreditAccount* sarahCredit = new CreditAccount(sarah->getID());
+	ChequeAccount* sarahCheque = new ChequeAccount(sarah->getID());
+	SavingsAccount* sarahSavings = new SavingsAccount(sarah->getID());
+
+	fss->addCustomer(sarah);
+	fss->addAccount(sarahCredit);
+	fss->addAccount(sarahCheque);
+	fss->addAccount(sarahSavings);
+
+	sarahCredit->withdrawMoney(Money(1000,0));
+	sarahCheque->depositMoney(Money(200,0));
+	sarahSavings->depositMoney(Money(800,0));
+
+	Money total = fss->getCustomerBalance(sarah->getID());
+
+	ASSERT(total.asCents() == 0);
+
+	delete fss;
+	delete sarah;
+	return TR_PASS;
+}
 
 #endif /*ENABLE_T4_TESTS*/
 
@@ -1447,6 +2765,7 @@ vector<TestResult (*)()> generateTests() {
 	tests.push_back(&testSubtractMoneyObject);
 	tests.push_back(&testCustomer);
 	tests.push_back(&testCustomerUniqueID);
+	tests.push_back(&testMoneyObjectAll);
 
 #ifdef ENABLE_T2_TESTS
 
@@ -1467,11 +2786,27 @@ vector<TestResult (*)()> generateTests() {
 	tests.push_back(&testFailedCreditAccountDeposit);
 	tests.push_back(&testSuccessfulCreditAccountWithdraw);
 	tests.push_back(&testSuccessfulCreditAccountWithdrawDebt);
+	tests.push_back(&testSavingsAccountOne);
+	tests.push_back(&testSavingsAccountTwo);
+	tests.push_back(&testSavingsAccountThree);
+	tests.push_back(&testSavingsAccountFour);
+	tests.push_back(&testSavingsAccountFive);
+	tests.push_back(&testSavingsAccountSix);
+	tests.push_back(&testChequeAccountOne);
+	tests.push_back(&testChequeAccountTwo);
+	tests.push_back(&testChequeAccountThree);
+	tests.push_back(&testChequeAccountFour);
+	tests.push_back(&testCreditAccountOne);
+	tests.push_back(&testCreditAccountTwo);
+	tests.push_back(&testCreditAccountThree);
+	tests.push_back(&testCreditAccountFour);
+	tests.push_back(&testAccount);
 
 #endif /*ENABLE_T2_TESTS*/
 
 #ifdef ENABLE_T3_TESTS
 
+	//tests.push_back(&testTransactionOne);
 	tests.push_back(&testTransaction);
 	tests.push_back(&testTransactionNegativeAmount);
 	tests.push_back(&testCorrectTransactionID);
@@ -1479,6 +2814,11 @@ vector<TestResult (*)()> generateTests() {
 	tests.push_back(&testSuccessfulTransactionTwo);
 	tests.push_back(&testFailedTransactionOne);
 	tests.push_back(&testFailedTransactionTwo);
+	tests.push_back(&testTransactionTwo);
+	tests.push_back(&testTransactionThree);
+	tests.push_back(&testTransactionFour);
+	tests.push_back(&testTransactionFive);
+	tests.push_back(&testTransactionSix);
 
 #endif /*ENABLE_T3_TESTS*/
 
@@ -1500,6 +2840,16 @@ vector<TestResult (*)()> generateTests() {
 	tests.push_back(&testGetTransactionsFSS);
 	tests.push_back(&testGetTotalCustomerBalance);
 	tests.push_back(&testGetTotalCustomerBalanceMultiple);
+	tests.push_back(&testFSSOne);
+	tests.push_back(&testFSSTwo);
+	tests.push_back(&testFSSThree);
+	tests.push_back(&testFSSFour);
+	tests.push_back(&testFSSFive);
+	tests.push_back(&testFSSSix);
+	tests.push_back(&testFSSSeven);
+	tests.push_back(&testFSSEight);
+	tests.push_back(&testFSSNine);
+	tests.push_back(&testFSSTen);
 
 #endif /*ENABLE_T4_TESTS*/
 

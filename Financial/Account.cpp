@@ -28,6 +28,17 @@ Money Account::getBalance() const {
 	return *(this->balance);
 }
 
+bool Account::returnMoney(Money amount) {
+	// check deposit amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+
+	// return amount
+	this->balance->add(amount);
+	return true;
+
+}
+
 Account::~Account() {
 	// TODO implement
 }

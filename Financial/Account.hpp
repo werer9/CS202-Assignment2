@@ -28,6 +28,8 @@ public:
 	int getAccountID() const;
 	// get account balance
 	Money getBalance() const;
+
+	virtual bool returnMoney(Money amount);
 	// destructor
 	virtual ~Account();
 };

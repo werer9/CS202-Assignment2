@@ -4,6 +4,10 @@ SavingsAccount::SavingsAccount(const int customerID) : Account(customerID), depo
 }
 
 bool SavingsAccount::withdrawMoney(Money amount) {
+	// check withdraw amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+	
 	// get amount in cents is not more than balance
 	if (amount.asCents() > this->balance->asCents()) {
 		return false;
@@ -19,11 +23,17 @@ bool SavingsAccount::withdrawMoney(Money amount) {
 	return false;
 }
 
+
+
 bool SavingsAccount::depositMoney(Money amount) {
-	// make sure amount isn't zero
-	if (amount.asCents() < 0) {
+	// check deposit amount is greater than 0
+	if (amount.asCents() < 0)
 		return false;
-	}
+
+	// // make sure amount isn't zero
+	// if (amount.asCents() < 0) {
+	// 	return false;
+	// }
 	// increase the number of deposits
 	++(this->depositCount);
 	// if less thant two deposits just add amount to balance
@@ -45,6 +55,12 @@ bool SavingsAccount::depositMoney(Money amount) {
 
 Money SavingsAccount::getBonusValue() const {
 	return this->bonusAmount;
+}
+
+bool SavingsAccount::returnMoney(Money amount) {
+	Account::returnMoney(amount);
+	this->bonusAmount.addDollars(2);
+	return true;
 }
 
 SavingsAccount::~SavingsAccount() {

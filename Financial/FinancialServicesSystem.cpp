@@ -132,26 +132,21 @@ bool FinancialServicesSystem::addTransaction(Transaction* transaction) {
 }
 
 std::vector<Transaction*> FinancialServicesSystem::performPendingTransactions() {
-	// sorted transactions vector
-	std::vector<Transaction*> transactionsInOrder;
 	// return vector
 	std::vector<Transaction*> transactionsCompleted;
-	
-	// copy member vector for sorting
-	transactionsInOrder = this->transactions;
 
 	// use stdlib sort algorithm
-	std::sort(transactionsInOrder.begin(), transactionsInOrder.end());
+	std::sort(this->transactions.begin(), this->transactions.end(), Transaction::compById);
 	// iterate over ordered transactions
-	for (unsigned int i = 0; i < (unsigned int)transactionsInOrder.size(); i++) {
+	for (unsigned int i = 0; i < (unsigned int)this->transactions.size(); i++) {
 		// check transaction is pending
-		if (transactionsInOrder[i]->getState() == TransactionState::PENDING) {
+		if (this->transactions[i]->getState() == TransactionState::PENDING) {
 			// perform transaction
-			if (transactionsInOrder[i]->performTransaction()) {
+			if (this->transactions[i]->performTransaction()) {
 				// check if transaction successful
-				if (transactionsInOrder[i]->getState() == TransactionState::COMPLETED) {
+				if (this->transactions[i]->getState() == TransactionState::COMPLETED) {
 					// added completed transaction to return vector
-					transactionsCompleted.push_back(transactionsInOrder[i]);
+					transactionsCompleted.push_back(this->transactions[i]);
 				}
 			} 
 		}
@@ -172,7 +167,10 @@ Money FinancialServicesSystem::getCustomerBalance(int customerID) const {
 		// added total amount from all acounts to return
 		Money amount(0, 0);
 		for (unsigned int i = 0; i < accounts.size(); i++) {
-			amount.add(accounts[i]->getBalance());
+			if (accounts[i]->getBalance().asCents() >= 0) 
+				amount.add(accounts[i]->getBalance());
+			else 
+				amount.subtractCents(accounts[i]->getBalance().asCents()*-1);
 		}
 		return amount;
 	}

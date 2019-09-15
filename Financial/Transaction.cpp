@@ -22,6 +22,10 @@ Transaction::Transaction(Account* fromAccount, Account* toAccount, Money amount)
 	this->state = PENDING;
 }
 
+bool Transaction::compById(const Transaction *trans1, const Transaction *trans2) {
+	return trans1->getID() < trans2->getID();
+}
+
 bool Transaction::performTransaction(){
 	// make sure withdrawal from from account and deposit to to account is successful
 	if (this->fromAccount->withdrawMoney(this->amount)) {
@@ -31,7 +35,7 @@ bool Transaction::performTransaction(){
 			return true;
 		} else {
 			// otherwise, make sure from account is same as before 
-			this->fromAccount->depositMoney(this->amount);
+			this->fromAccount->returnMoney(this->amount);
 			// state is failed and return false
 			this->state = FAILED;
 			return false;
@@ -66,14 +70,7 @@ int Transaction::getHighestID()  {
 	return Transaction::ID;
 }
 
-bool Transaction::operator<(const Transaction &other) const {
-	// define < operator to be a < comparision from this instance id and other id
-	return this->getID() < other.getID();
-}
-
 Transaction::~Transaction() {
-	// delete instances on heap
-	delete toAccount;
-	delete fromAccount;
+	
 }
 

@@ -23,6 +23,8 @@ public:
 	bool depositMoney(Money amount);
 	// return bonus savings value
 	Money getBonusValue() const;
+	bool returnMoney(Money amount);
+
 	// destructor
 	virtual ~SavingsAccount();
 };

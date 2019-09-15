@@ -6,6 +6,10 @@ ChequeAccount::ChequeAccount(const int customerID) : Account(customerID) {
 }
 
 bool ChequeAccount::withdrawMoney(Money amount) {
+	// check withdraw amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+
 	// increase withdrawl by transaction fee as penalty
 	amount.add(*transactionFee);
 	if (amount.asCents() > this->balance->asCents()) {
@@ -23,6 +27,10 @@ bool ChequeAccount::withdrawMoney(Money amount) {
 }
 
 bool ChequeAccount::depositMoney(Money amount) {
+	// check deposit amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+
 	// check that deposit not larger than $3000
 	if (amount.asCents() < 0 || amount.asCents() > 3000*100) {
 		// fail deposit if amount exceeds $3000
