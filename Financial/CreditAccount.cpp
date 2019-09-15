@@ -6,6 +6,10 @@ CreditAccount::CreditAccount(const int customerID) : Account(customerID) {
 }
 
 bool CreditAccount::withdrawMoney(Money amount) {
+	// check withdraw amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+
 	// check amount is not negative
 	if (amount.asCents() < 0) {
 		// fail withdraw if negative amount
@@ -21,6 +25,10 @@ bool CreditAccount::withdrawMoney(Money amount) {
 }
 
 bool CreditAccount::depositMoney(Money amount) {
+	// check deposit amount is greater than 0
+	if (amount.asCents() < 0)
+		return false;
+
 	// make sure deposit will not cause account to exceed balance of $5000
 	if (amount.asCents() + this->balance->asCents() > 5000 * 100) {
 		// fail deposit if it exceeds account limit

@@ -28,7 +28,7 @@ private:
 	int getTransactionIndex(int ID) const;
 	// return accounts that belong to customer
 	std::vector<Account*> getCustomerAccounts(int ID) const;
-	// get transactions of specified state
+	// get transactions of specified statei
 	std::vector<Transaction*> getTransactionByState(TransactionState state) const;
 
 public:
@@ -38,6 +38,7 @@ public:
 	FinancialServicesSystem();
 	// return my UPI
 	static std::string author();
+	
 	// add customer to fss
 	bool addCustomer(Customer* customer);
 	// add account to fss if it belongs to customer

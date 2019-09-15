@@ -35,6 +35,9 @@ public:
 
 	// constructor
 	Transaction(Account* fromAccount, Account* toAccount, Money amount);
+
+	// comparision function for sorting transactions
+	static bool compById(const Transaction *trans1, const Transaction *trans2);
 	// perform transaction if pending, return true if successful
 	bool performTransaction();
 	// return transaction state
@@ -50,9 +53,7 @@ public:
 	// return highest id created so far
 	// static method/non-instance method
 	static int getHighestID();
-	// implement < operator for std::sort
-	// compares two transaction ids
-	bool operator<(const Transaction &other) const;
+
 	// destructor
 	virtual ~Transaction();
 };
